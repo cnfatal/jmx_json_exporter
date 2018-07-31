@@ -22,7 +22,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	prometheus.MustRegister(collector.NewHadoopCollector([]string{*from}))
+	prometheus.MustRegister(collector.NewHadoopCollector(map[string]string{*from: *from}))
 	http.Handle(*path, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`

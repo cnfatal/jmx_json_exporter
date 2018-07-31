@@ -27,8 +27,8 @@ var (
 )
 
 type HadoopCollector struct {
-	masterHosts       []string
-	nodeHosts         []string
+	masterHosts       map[string]string
+	nodeHosts         map[string]string
 	masterCollectors  map[string]*CommonCollector
 	workersCollectors map[string]*CommonCollector
 }
@@ -56,15 +56,16 @@ func (hc *HadoopCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func NewHadoopCollector(masterHosts []string) *HadoopCollector {
+func NewHadoopCollector(masterHosts map[string]string) *HadoopCollector {
 	nodeHosts := getNodeHosts(masterHosts)
 	mcs := make(map[string]*CommonCollector, len(masterHosts))
 	for _, v := range masterHosts {
-		mcs[v] = NewBeansCollector(v, masterConfig)
+		// todo: 使用hostname代替ip
+		mcs[v] = NewBeansCollector(v, "master", masterConfig)
 	}
 	wcs := make(map[string]*CommonCollector, len(nodeHosts))
-	for _, v := range nodeHosts {
-		wcs[v] = NewBeansCollector(v, workerConfig)
+	for k, v := range nodeHosts {
+		wcs[v] = NewBeansCollector(v, k, workerConfig)
 	}
 	return &HadoopCollector{
 		masterHosts:       masterHosts,
@@ -74,32 +75,22 @@ func NewHadoopCollector(masterHosts []string) *HadoopCollector {
 	}
 }
 
-func getNodeHosts(masterHosts []string) []string {
+func getNodeHosts(masterHosts map[string]string) map[string]string {
 	const protocol = "http://"
 	const nameNodeInfo = "Hadoop:service=NameNode,name=NameNodeInfo"
 	const path = "/jmx?qry=" + nameNodeInfo
 	const liveNodesName = "LiveNodes"
 	const infoKey = "infoAddr"
 
-	nodeUrls := make(map[string]bool)
+	nodeUrls := make(map[string]string)
 	for _, v := range masterHosts {
-		body, err := utils.Get(protocol + v + path)
-		if err != nil {
-			log.Fatal(err)
-		}
-		liveNodes := utils.JmxJsonBeansParse(body)[nameNodeInfo].Content[liveNodesName].(string)
+		liveNodes := utils.JmxJsonBeansParse(utils.Get(protocol + v + path))[nameNodeInfo].Content[liveNodesName].(string)
 		nodesJson := make(map[string]interface{})
 		json.Unmarshal([]byte(strings.Trim(liveNodes, "/")), &nodesJson)
-		for _, v := range nodesJson {
+		for k, v := range nodesJson {
 			nodeUrl := v.(map[string]interface{})[infoKey].(string)
-			nodeUrls[nodeUrl] = true
+			nodeUrls[k] = nodeUrl
 		}
 	}
-	result := make([]string, len(nodeUrls))
-	i := 0
-	for k := range nodeUrls {
-		result[i] = k
-		i ++
-	}
-	return result
+	return nodeUrls
 }
