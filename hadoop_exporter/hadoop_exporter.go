@@ -6,8 +6,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/fatalc/jmx_json_exporter/collector"
 )
 
 var (
@@ -22,7 +20,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	prometheus.MustRegister(collector.NewHadoopCollector(map[string]string{*from: *from}))
+	prometheus.MustRegister(NewHadoopCollector(map[string]string{*from: *from}))
 	http.Handle(*path, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`

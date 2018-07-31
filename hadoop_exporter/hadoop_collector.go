@@ -1,4 +1,4 @@
-package collector
+package main
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -6,6 +6,7 @@ import (
 	"github.com/fatalc/jmx_json_exporter/utils"
 	"encoding/json"
 	"strings"
+	"github.com/fatalc/jmx_json_exporter/collector"
 )
 
 // 配置需要监控的数据项 todo：现在仅支持两层嵌套,待改进
@@ -29,8 +30,8 @@ var (
 type HadoopCollector struct {
 	masterHosts       map[string]string
 	nodeHosts         map[string]string
-	masterCollectors  map[string]*CommonCollector
-	workersCollectors map[string]*CommonCollector
+	masterCollectors  map[string]*collector.CommonCollector
+	workersCollectors map[string]*collector.CommonCollector
 }
 
 func (hc *HadoopCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -58,14 +59,14 @@ func (hc *HadoopCollector) Collect(ch chan<- prometheus.Metric) {
 
 func NewHadoopCollector(masterHosts map[string]string) *HadoopCollector {
 	nodeHosts := getNodeHosts(masterHosts)
-	mcs := make(map[string]*CommonCollector, len(masterHosts))
+	mcs := make(map[string]*collector.CommonCollector, len(masterHosts))
 	for _, v := range masterHosts {
 		// todo: 使用hostname代替ip
-		mcs[v] = NewBeansCollector(v, "master", masterConfig)
+		mcs[v] = collector.NewBeansCollector(v, "master", masterConfig)
 	}
-	wcs := make(map[string]*CommonCollector, len(nodeHosts))
+	wcs := make(map[string]*collector.CommonCollector, len(nodeHosts))
 	for k, v := range nodeHosts {
-		wcs[v] = NewBeansCollector(v, k, workerConfig)
+		wcs[v] = collector.NewBeansCollector(v, k, workerConfig)
 	}
 	return &HadoopCollector{
 		masterHosts:       masterHosts,
