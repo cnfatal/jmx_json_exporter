@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
-		"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 
-		"github.com/fatalc/jmx_json_exporter/collector"
+	"github.com/fatalc/jmx_json_exporter/collector"
 )
 
 var (
-	from = flag.String("from", "localhost:80/jmx", "The URL of \"/jmx\" json resources ")
-	port = flag.String("out", ":8080", "The port of \"/metrics\"  output endpoint")
+	from = flag.String("from", "localhost:80", "The host of Hadoop nameNode ")
+	port = flag.String("port", "8080", "The port of \"/metrics\"  output endpoint")
 	path = flag.String("path", "/metrics", "Path of output endpoint")
 )
 
@@ -27,13 +27,14 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
 			<html>
-				<head><title>Jmx Json Exporter</title></head>
+				<head><title>Hadoop Exporter</title></head>
             	<body>
-            		<h1>jmx json Exporter</h1>
+            		<h1>Hadoop Exporter</h1>
             		<p><a href='` + *path + `'>Metrics</a></p>
             	</body>
 			</html>`))
 	})
-	log.Printf("server listing at %v", *port)
-	log.Fatal(http.ListenAndServe(*port, nil))
+	listenAddress := ":" + *port
+	log.Printf("server listing at %v", listenAddress)
+	log.Fatal(http.ListenAndServe(listenAddress, nil))
 }
