@@ -10,19 +10,21 @@ import (
 // 例子：{ "name" : "Hadoop:service=NameNode,name=JvmMetrics", ... }
 // Name:Hadoop Labels:{service=NameNode,name=JVMMetrics} Content:{name={...},keys={...}}
 type JmxBean struct {
-	Name    string
+	Domain    string
 	Labels  map[string]string
 	Content map[string]interface{}
 }
 
-func JmxJsonBeansParse(httpBodyBytes []byte) (result []*JmxBean){
+func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean){
 	jmx := make(map[string]interface{})
 	json.Unmarshal(httpBodyBytes, &jmx)
-	beans := jmx["beans"].([]map[string]interface{})
-	result = make([]*JmxBean, len(beans))
+	beans := jmx["beans"].([]interface{})
+	result = make(map[string]*JmxBean, len(beans))
 	for i := 0; i < len(beans); i++ {
-		main, labels := parseJmxBeanName(beans[i]["name"].(string))
-		result[i] = &JmxBean{Name: main, Labels: labels,Content:beans[i]}
+		bean:=beans[i].(map[string]interface{})
+		name := bean["name"].(string)
+		domain, labels := parseJmxBeanName(name)
+		result[name] = &JmxBean{Domain: domain, Labels: labels,Content:bean}
 	}
 	return result
 }
@@ -61,10 +63,10 @@ func parseMetrics(name string, data interface{}, deep int, labels *map[string]st
 
 }
 
-func parseJmxBeanName(name string) (main string, properties map[string]string) {
+func parseJmxBeanName(name string) (domain string, properties map[string]string) {
 	properties = make(map[string]string)
 	var1 := strings.Split(name, ":")
-	main = var1[0]
+	domain = var1[0]
 	var2 := strings.Split(var1[1], ",")
 	for _, v := range var2 {
 		var3 := strings.Split(v, "=")
