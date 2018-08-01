@@ -8,6 +8,8 @@ import (
 	"log"
 )
 
+var counter = 0
+
 const (
 	endpoint    = "/commands"
 	dirs        = "dirs"
@@ -46,7 +48,7 @@ var config = map[string][]string{
 
 type zooKeeperCollector struct {
 	hosts      []string
-	collectors map[string]map[string]prometheus.Collector
+	collectors map[string]map[string]prometheus.Gauge
 }
 
 func (zc *zooKeeperCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -58,38 +60,45 @@ func (zc *zooKeeperCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func getCommand(command string, host string) map[string]interface{} {
-	log.Printf("Query:%s/%s",host,command)
 	result := make(map[string]interface{})
 	json.Unmarshal(utils.Get("http://"+host+endpoint+"/"+command), &result)
 	return result
 }
 
 func (zc *zooKeeperCollector) Collect(ch chan<- prometheus.Metric) {
+	counter ++
+	log.Printf("Do Collect(), %d times", counter)
 	for _, host := range zc.hosts {
 		for command, values := range config {
 			commandReturns := getCommand(command, host)
 			for _, value := range values {
-				collector, ok := zc.collectors[host][command+"$"+value].(prometheus.Gauge)
-				if !ok {
+				//collector, ok := zc.collectors[host][command+"$"+value].(prometheus.Gauge)
+				collector := zc.collectors[host][command+"#"+value]
+				if collector == nil {
 					continue
-				} else {
-					switch commandReturns[value].(type) {
-					case float64:
-						collector.Set(commandReturns[value].(float64))
-					case []interface{}:
-						collector.Set(float64(len(commandReturns[value].([]interface{}))))
-					}
-					collector.Collect(ch)
 				}
+				//if !ok {
+				//	continue
+				//} else {
+				switch commandReturns[value].(type) {
+				case float64:
+					collector.Set(commandReturns[value].(float64))
+					break
+				case []interface{}:
+					collector.Set(float64(len(commandReturns[value].([]interface{}))))
+					break
+				}
+				collector.Collect(ch)
+				//}
 			}
 		}
 	}
 }
 
 func NewZookeeperCollector(hosts []string) *zooKeeperCollector {
-	collectors := make(map[string]map[string]prometheus.Collector)
+	collectors := make(map[string]map[string]prometheus.Gauge)
 	for _, host := range hosts {
-		collectors[host] = make(map[string]prometheus.Collector)
+		collectors[host] = make(map[string]prometheus.Gauge)
 	}
 	result := &zooKeeperCollector{
 		hosts:      hosts,
@@ -101,7 +110,7 @@ func NewZookeeperCollector(hosts []string) *zooKeeperCollector {
 				result.collectors[host][command+"#"+value] = prometheus.NewGauge(
 					prometheus.GaugeOpts{
 						Namespace:   "zookeeper",
-						Subsystem:   "node_" + strings.Replace(host,":","",-1),
+						Subsystem:   "node_" + strings.Replace(host, ":", "", -1),
 						Name:        command + "_" + value,
 						Help:        "Help",
 						ConstLabels: nil,
