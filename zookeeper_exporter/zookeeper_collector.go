@@ -111,7 +111,7 @@ func NewZookeeperCollector(hosts []string) *zooKeeperCollector {
 				result.collectors[host][command+"#"+value] = prometheus.NewGauge(
 					prometheus.GaugeOpts{
 						Namespace:   "zookeeper",
-						Subsystem:   strings.Replace(host, ":", "", -1),
+						Subsystem:   strings.Replace(strings.Replace(host, ":", "", -1), ".", "", -1),
 						Name:        command + "_" + value,
 						Help:        "Help",
 						ConstLabels: nil,
