@@ -20,7 +20,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	prometheus.MustRegister()
+	prometheus.MustRegister(NewZookeeperCollector([]string{*from}))
 	http.Handle(*path, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
