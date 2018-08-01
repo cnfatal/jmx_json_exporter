@@ -11,19 +11,15 @@ import (
 var counter = 0
 
 const (
-	endpoint    = "/commands"
-	dirs        = "dirs"
-	monitor     = "monitor"
-	serverStats = "server_stats"
-	stats       = "stats"
+	endpoint = "/commands"
 )
 
 var config = map[string][]string{
-	dirs: {
+	"dirs": {
 		"datadir_size",
 		"logdir_size",
 	},
-	monitor: {
+	"monitor": {
 		"avg_latency",
 		"max_latency",
 		"min_latency",
@@ -36,13 +32,18 @@ var config = map[string][]string{
 		"approximate_data_size",
 		"open_file_descriptor_count",
 	},
-	serverStats: {
+	"serverStats": {
 		//"server_stats",
 		"node_count",
 	},
-	stats: {
+	"stats": {
 		//"server_stats",
 		"connections",
+	},
+	"watch_summary": {
+		"num_connections",
+		"num_paths",
+		"num_total_watches",
 	},
 }
 
