@@ -4,29 +4,33 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"errors"
 )
 
 //JmxBeans 解析后的 jmx 数据，
 // 例子：{ "name" : "Hadoop:service=NameNode,name=JvmMetrics", ... }
 // Name:Hadoop Labels:{service=NameNode,name=JVMMetrics} Content:{name={...},keys={...}}
 type JmxBean struct {
-	Domain    string
+	Domain  string
 	Labels  map[string]string
 	Content map[string]interface{}
 }
 
-func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean){
+func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean,err error) {
 	jmx := make(map[string]interface{})
 	json.Unmarshal(httpBodyBytes, &jmx)
-	beans := jmx["beans"].([]interface{})
+	beans, ok := jmx["beans"].([]interface{})
+	if !ok {
+		return nil,errors.New("响应中未找到\"beans\" 数据")
+	}
 	result = make(map[string]*JmxBean, len(beans))
 	for i := 0; i < len(beans); i++ {
-		bean:=beans[i].(map[string]interface{})
+		bean := beans[i].(map[string]interface{})
 		name := bean["name"].(string)
 		domain, labels := parseJmxBeanName(name)
-		result[name] = &JmxBean{Domain: domain, Labels: labels,Content:bean}
+		result[name] = &JmxBean{Domain: domain, Labels: labels, Content: bean}
 	}
-	return result
+	return
 }
 
 func parseMetrics(name string, data interface{}, deep int, labels *map[string]string) {

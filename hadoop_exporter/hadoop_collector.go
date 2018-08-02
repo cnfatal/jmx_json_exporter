@@ -85,7 +85,12 @@ func getNodeHosts(masterHosts map[string]string) map[string]string {
 
 	nodeUrls := make(map[string]string)
 	for _, v := range masterHosts {
-		liveNodes := utils.JmxJsonBeansParse(utils.Get(protocol + v + path))[nameNodeInfo].Content[liveNodesName].(string)
+		beans, err := utils.JmxJsonBeansParse(utils.Get(protocol + v + path))
+		if err != nil {
+			log.Printf("%s 下未找到 Datanode 或地址无法访问")
+			continue
+		}
+		liveNodes := beans[nameNodeInfo].Content[liveNodesName].(string)
 		nodesJson := make(map[string]interface{})
 		json.Unmarshal([]byte(strings.Trim(liveNodes, "/")), &nodesJson)
 		for k, v := range nodesJson {
