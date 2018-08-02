@@ -35,24 +35,20 @@ type HadoopCollector struct {
 }
 
 func (hc *HadoopCollector) Describe(ch chan<- *prometheus.Desc) {
-	for k, v := range hc.masterCollectors {
-		log.Printf("Describe of %s", k)
+	for _, v := range hc.masterCollectors {
 		v.Describe(ch)
 	}
-	for k, v := range hc.workersCollectors {
-		log.Printf("Describe of %s", k)
+	for _, v := range hc.workersCollectors {
 		v.Describe(ch)
 	}
 }
 
 //Collect implements the prometheus.Collector interface. 该接口调用来更新数据
 func (hc *HadoopCollector) Collect(ch chan<- prometheus.Metric) {
-	for k, v := range hc.masterCollectors {
-		log.Printf("Collect of %s", k)
+	for _, v := range hc.masterCollectors {
 		v.Collect(ch)
 	}
-	for k, v := range hc.workersCollectors {
-		log.Printf("Collect of %s", k)
+	for _, v := range hc.workersCollectors {
 		v.Collect(ch)
 	}
 }
