@@ -6,6 +6,7 @@ import (
 	"github.com/fatalc/jmx_json_exporter/utils"
 	"strings"
 	"log"
+	"strconv"
 )
 
 const nameSpace = "Hbase"
@@ -92,19 +93,30 @@ func getRegionServers(masterHosts []string) *map[string]string {
 		if lives != emptyString {
 			for _, regionStr := range strings.Split(lives, ";") {
 				regionArr := strings.Split(regionStr, ",")
-				result[regionArr[0]+":"+regionArr[1]] = regionArr[0] + ":" + regionArr[1]
+				result[regionArr[0]+":"+inferJmxPort(regionArr[1])] = regionArr[0] + ":" + inferJmxPort(regionArr[1])
 			}
 		}
 
 		if deads != emptyString {
 			for _, regionStr := range strings.Split(deads, ";") {
 				regionArr := strings.Split(regionStr, ",")
-				result[regionArr[0]+":"+regionArr[1]] = regionArr[0] + ":" + regionArr[1]
+				result[regionArr[0]+":"+inferJmxPort(regionArr[1])] = regionArr[0] + ":" + inferJmxPort(regionArr[1])
 			}
 		}
 	}
 	log.Printf("Analysised Regionservers: %v", result)
 	return &result
+}
+
+func inferJmxPort(port string) string {
+	const inferNum = 10
+	intPort, err := strconv.Atoi(port)
+	if err != nil {
+		return port
+	}
+	inferPort := intPort + inferNum
+	log.Printf("infered port %d is %d", port, inferPort)
+	return strconv.Itoa(inferPort)
 }
 
 func NewHbaseCollector(masterHosts []string) *HbaseCollector {
