@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const namespace = "hadoop"
+
 // 配置需要监控的数据项 todo：现在仅支持两层嵌套,待改进
 var (
 	masterConfig = map[string][]string{
@@ -58,11 +60,11 @@ func NewHadoopCollector(masterHosts map[string]string) *HadoopCollector {
 	mcs := make(map[string]*collector.CommonCollector, len(masterHosts))
 	for _, v := range masterHosts {
 		// todo: 使用hostname代替ip
-		mcs[v] = collector.NewBeansCollector(v, "master", masterConfig)
+		mcs[v] = collector.NewBeansCollector(v, namespace, masterConfig)
 	}
 	wcs := make(map[string]*collector.CommonCollector, len(nodeHosts))
-	for k, v := range nodeHosts {
-		wcs[v] = collector.NewBeansCollector(v, k, workerConfig)
+	for host, v := range nodeHosts {
+		wcs[v] = collector.NewBeansCollector(host, namespace, workerConfig)
 	}
 	return &HadoopCollector{
 		masterHosts:       masterHosts,
@@ -89,9 +91,9 @@ func getNodeHosts(masterHosts map[string]string) map[string]string {
 		liveNodes := beans[nameNodeInfo].Content[liveNodesName].(string)
 		nodesJson := make(map[string]interface{})
 		json.Unmarshal([]byte(strings.Trim(liveNodes, "/")), &nodesJson)
-		for k, v := range nodesJson {
+		for host, v := range nodesJson {
 			nodeUrl := v.(map[string]interface{})[infoKey].(string)
-			nodeUrls[k] = nodeUrl
+			nodeUrls[host] = nodeUrl
 		}
 	}
 	return nodeUrls
