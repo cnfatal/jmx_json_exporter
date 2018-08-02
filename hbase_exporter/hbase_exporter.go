@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
 )
 
 var (

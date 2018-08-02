@@ -2,9 +2,9 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"strings"
-	"errors"
 )
 
 //JmxBeans 解析后的 jmx 数据，
@@ -16,12 +16,12 @@ type JmxBean struct {
 	Content map[string]interface{}
 }
 
-func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean,err error) {
+func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean, err error) {
 	jmx := make(map[string]interface{})
 	json.Unmarshal(httpBodyBytes, &jmx)
 	beans, ok := jmx["beans"].([]interface{})
 	if !ok {
-		return nil,errors.New("响应中未找到\"beans\" 数据")
+		return nil, errors.New("响应中未找到\"beans\" 数据")
 	}
 	result = make(map[string]*JmxBean, len(beans))
 	for i := 0; i < len(beans); i++ {

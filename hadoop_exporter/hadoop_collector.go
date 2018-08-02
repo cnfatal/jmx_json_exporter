@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"github.com/fatalc/jmx_json_exporter/collector"
+	"github.com/fatalc/jmx_json_exporter/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
-	"github.com/fatalc/jmx_json_exporter/utils"
-	"encoding/json"
 	"strings"
-	"github.com/fatalc/jmx_json_exporter/collector"
 )
 
 // 配置需要监控的数据项 todo：现在仅支持两层嵌套,待改进

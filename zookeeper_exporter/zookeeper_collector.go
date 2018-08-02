@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/fatalc/jmx_json_exporter/utils"
 	"encoding/json"
-	"strings"
+	"github.com/fatalc/jmx_json_exporter/utils"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
+	"strings"
 )
 
 var counter = 0
@@ -67,7 +67,7 @@ func getCommand(command string, host string) map[string]interface{} {
 }
 
 func (zc *zooKeeperCollector) Collect(ch chan<- prometheus.Metric) {
-	counter ++
+	counter++
 	log.Printf("Do Collect(), %d times", counter)
 	for _, host := range zc.hosts {
 		for command, values := range config {

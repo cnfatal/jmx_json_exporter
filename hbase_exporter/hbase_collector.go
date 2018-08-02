@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/fatalc/jmx_json_exporter/collector"
 	"github.com/fatalc/jmx_json_exporter/utils"
-	"strings"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"strconv"
+	"strings"
 )
 
 const nameSpace = "Hbase"
