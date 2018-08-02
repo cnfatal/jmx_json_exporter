@@ -6,10 +6,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
+	"strings"
 )
 
+const zooHttpPort = ":8080"
+
 var (
-	from = flag.String("from", "localhost:80", "The host of Zookeeper Server ")
+	from = flag.String("from", "localhost", "The qurom of Zookeeper ")
 	port = flag.String("port", "8080", "The port of \"/metrics\"  output endpoint")
 	path = flag.String("path", "/metrics", "Path of output endpoint")
 )
@@ -20,7 +23,13 @@ func init() {
 
 func main() {
 	flag.Parse()
-	prometheus.MustRegister(NewZookeeperCollector([]string{*from}))
+
+	zookeepers := strings.Split(*from, ",")
+	vars := make([]string, len(zookeepers))
+	for index, zookeeper := range zookeepers {
+		vars[index] = zookeeper + zooHttpPort
+	}
+	prometheus.MustRegister(NewZookeeperCollector(vars))
 	http.Handle(*path, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
