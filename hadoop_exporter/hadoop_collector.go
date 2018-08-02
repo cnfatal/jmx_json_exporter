@@ -93,7 +93,7 @@ func getNodeHosts(masterHosts map[string]string) map[string]string {
 		json.Unmarshal([]byte(strings.Trim(liveNodes, "/")), &nodesJson)
 		for host, v := range nodesJson {
 			nodeUrl := v.(map[string]interface{})[infoKey].(string)
-			nodeUrls[host] = nodeUrl
+			nodeUrls[host] = strings.Split(host, ":")[0] + strings.Split(nodeUrl, ":")[1]
 		}
 	}
 	return nodeUrls
