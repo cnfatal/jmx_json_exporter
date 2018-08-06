@@ -2,29 +2,30 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/fatalc/jmx_json_exporter/collector"
+	. "github.com/fatalc/jmx_json_exporter/collector"
 	"github.com/fatalc/jmx_json_exporter/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"strings"
+	"github.com/fatalc/jmx_json_exporter/jvm_collector"
 )
 
 const namespace = "hadoop"
 
 // 配置需要监控的数据项 todo：现在仅支持两层嵌套,待改进
 var (
-	masterConfig = map[string][]string{
+	masterConfig = Properties{
 		"Hadoop:service=NameNode,name=NameNodeInfo": {
-			"Total",
-			"Used",
-			"Free",
-			"NonDfsUsedSpace",
+			&PropertiesItem{"Total", TypeGauge, "磁盘总计",},
+			&PropertiesItem{"Used", TypeGauge, "已使用",},
+			&PropertiesItem{"Free", TypeGauge, "剩余",},
+			&PropertiesItem{"NonDfsUsedSpace", TypeGauge, "非DFS使用空间",},
 		},
 	}
-	workerConfig = map[string][]string{
+	workerConfig = Properties{
 		"Hadoop:service=DataNode,name=JvmMetrics": {
-			"MemNonHeapCommittedM",
-			"LogWarn",
+			&PropertiesItem{"MemNonHeapCommittedM", TypeGauge, "已使用内存",		},
+			&PropertiesItem{"LogWarn", TypeGauge, "日志警告",		},
 		},
 	}
 )
@@ -32,8 +33,8 @@ var (
 type HadoopCollector struct {
 	masterHosts       map[string]string
 	nodeHosts         map[string]string
-	masterCollectors  map[string]*collector.CommonCollector
-	workersCollectors map[string]*collector.CommonCollector
+	masterCollectors  map[string]*CommonCollector
+	workersCollectors map[string]*CommonCollector
 }
 
 func (hc *HadoopCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -57,14 +58,14 @@ func (hc *HadoopCollector) Collect(ch chan<- prometheus.Metric) {
 
 func NewHadoopCollector(masterHosts map[string]string) *HadoopCollector {
 	nodeHosts := getNodeHosts(masterHosts)
-	mcs := make(map[string]*collector.CommonCollector, len(masterHosts))
-	for _, v := range masterHosts {
+	mcs := make(map[string]*CommonCollector, len(masterHosts))
+	for _, masterHostPort := range masterHosts {
 		// todo: 使用hostname代替ip
-		mcs[v] = collector.NewBeansCollector(v, namespace, masterConfig)
+		mcs[masterHostPort] = jvm_collector.NewWithJvmCollector(masterHostPort, namespace, masterConfig)
 	}
-	wcs := make(map[string]*collector.CommonCollector, len(nodeHosts))
+	wcs := make(map[string]*CommonCollector, len(nodeHosts))
 	for host, v := range nodeHosts {
-		wcs[v] = collector.NewBeansCollector(host, namespace, workerConfig)
+		wcs[v] = NewCommonCollector(host, namespace, workerConfig)
 	}
 	return &HadoopCollector{
 		masterHosts:       masterHosts,
@@ -83,7 +84,7 @@ func getNodeHosts(masterHosts map[string]string) map[string]string {
 
 	nodeUrls := make(map[string]string)
 	for _, v := range masterHosts {
-		beans, err := utils.JmxJsonBeansParse(utils.Get(protocol + v + path))
+		beans, err := JmxJsonBeansParse(utils.Get(protocol + v + path))
 		if err != nil {
 			log.Printf("%s 下未找到 Datanode 或地址无法访问")
 			continue
