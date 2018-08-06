@@ -2,67 +2,132 @@ package collector
 
 import (
 	"github.com/fatalc/jmx_json_exporter/utils"
-	"github.com/prometheus/client_golang/prometheus"
+	. "github.com/prometheus/client_golang/prometheus"
 	"log"
 	"strings"
+	"github.com/prometheus/common/model"
 )
 
+const httpProtocol = "http://"
 const jmxEndpoint = "/jmx"
 
 type CommonCollector struct {
-	hostname string
-	// todo: 增加基础jvm监控数据
-	config     map[string][]string
-	Collectors map[string]prometheus.Collector
+	hostname   string
+	config     Properties
+	collectors map[string]interface{ Collector }
 }
 
-func (bc *CommonCollector) Describe(ch chan<- *prometheus.Desc) {
+func (bc *CommonCollector) Describe(ch chan<- *Desc) {
 	log.Printf("Describe: %s", bc.hostname)
-	for _, v := range bc.Collectors {
+	for _, v := range bc.collectors {
 		v.Describe(ch)
 	}
 }
 
-func (bc *CommonCollector) Collect(ch chan<- prometheus.Metric) {
+func (bc *CommonCollector) Collect(ch chan<- Metric) {
 	log.Printf("Collect: %s", bc.hostname)
-	beans, err := utils.JmxJsonBeansParse(utils.Get("http://" + bc.hostname + jmxEndpoint))
+	beans, err := JmxJsonBeansParse(utils.Get("http://" + bc.hostname + jmxEndpoint))
 	if err != nil {
 		log.Printf("Collect 未收集到数据")
 		return
 	}
-	for k, v := range bc.Collectors {
-		vars := strings.Split(k, "#")
-		vGauge, ok := v.(prometheus.Gauge)
-		if ok {
-			data := beans[vars[0]].Content[vars[1]]
-			switch data.(type) {
-			case float64:
-				vGauge.Set(data.(float64))
-			case []interface{}:
-				vGauge.Set(float64(len(data.([]interface{}))))
-			}
+	for k, v := range bc.collectors {
+		domain, name := DecodePropertyKey(k)
+		switch v.(type) {
+		case Gauge:
+			v.(Gauge).Set(beans[domain].Content[name].(float64))
+		case CustomSummary:
+			v.(CustomSummary).UpdateContent(generateCustomSummaryContent(NameRegexp(name), beans[name]))
+		default:
+			log.Printf("unsupport type %v", v)
 		}
 		v.Collect(ch)
 	}
 }
 
-func NewBeansCollector(host string, namespace string, config map[string][]string) *CommonCollector {
-	beansCollector := &CommonCollector{
-		hostname:   host,
-		config:     config,
-		Collectors: make(map[string]prometheus.Collector),
+func NewCommonCollector(hostPort string, namespace string, config Properties, labels map[string]string) *CommonCollector {
+	if labels == nil {
+		labels = map[string]string{model.InstanceLabel: strings.Split(hostPort, ":")[0]}
+	} else {
+		labels[model.InstanceLabel] = strings.Split(hostPort, ":")[0]
 	}
-	for k, v := range config {
-		for _, v2 := range v {
-			beansCollector.Collectors[k+"#"+v2] = prometheus.NewGauge(
-				prometheus.GaugeOpts{
-					Namespace:   namespace,
-					Subsystem:   strings.Replace(strings.Split(host, ":")[0], ".", "", -1),
-					Name:        v2,
-					Help:        "HelpOf" + v2,
-					ConstLabels: nil,
-				})
+	commonCollector := &CommonCollector{
+		hostname:   hostPort,
+		config:     config,
+		collectors: make(map[string]interface{ Collector }),
+	}
+	beans, err := JmxJsonBeansParse(utils.Get(httpProtocol + hostPort + jmxEndpoint))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	for domain, items := range config {
+		for name, bean := range beans {
+			//todo:
+			if string(domain) == name {
+				for _, item := range items {
+					switch item.DataType {
+					case TypeGauge:
+						commonCollector.collectors[EncodePropertyKey(domain, item.NameRegexp)] = NewGauge(GaugeOpts{
+							Namespace:   namespace,
+							Subsystem:   getSubSystem(bean),
+							Name:        string(item.NameRegexp),
+							Help:        item.Help,
+							ConstLabels: labels,
+						})
+					case TypeSummary:
+						_, _, content := generateCustomSummaryContent(item.NameRegexp, bean)
+						commonCollector.collectors[EncodePropertyKey(domain, item.NameRegexp)] = NewCustomSummary(SummaryOpts{
+							Namespace:   namespace,
+							Subsystem:   getSubSystem(bean),
+							Name:        string(item.NameRegexp),
+							Help:        item.Help,
+							ConstLabels: labels,
+							Objectives:  content,
+						})
+					default:
+						log.Printf("unsupport type %s", item.DataType)
+					}
+				}
+			}
 		}
 	}
-	return beansCollector
+	return commonCollector
+}
+
+func getSubSystem(bean *JmxBean) string {
+	labels := bean.Labels
+	value, ok := labels["name"]
+	if ok {
+		return value
+	}
+	value, ok = labels["type"]
+	if ok {
+		return value
+	}
+	return "UndefinedSubSystem"
+}
+
+func generateCustomSummaryContent(summaryName NameRegexp, bean *JmxBean) (sum float64, count uint64, content map[float64]float64) {
+	for name, value := range bean.Content {
+		if strings.Contains(name, string(summaryName)) {
+			switch strings.Split(name, "_")[1] {
+			case "num_ops":
+				count = value.(uint64)
+			case "25th":
+				content[0.25] = value.(float64)
+			case "median":
+				content[0.5] = value.(float64)
+			case "75ht":
+				content[0.5] = value.(float64)
+			case "90th":
+				content[0.5] = value.(float64)
+			case "95th":
+				content[0.5] = value.(float64)
+			case "99.9th":
+				content[0.99] = value.(float64)
+				sum = value.(float64)
+			}
+		}
+	}
+	return
 }

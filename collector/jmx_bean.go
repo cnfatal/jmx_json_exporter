@@ -1,10 +1,9 @@
-package utils
+package collector
 
 import (
 	"encoding/json"
 	"errors"
-	"log"
-	"strings"
+		"strings"
 )
 
 //JmxBeans 解析后的 jmx 数据，
@@ -16,6 +15,7 @@ type JmxBean struct {
 	Content map[string]interface{}
 }
 
+//JmxJsonBeansParse 从http响应中解析出beans结构
 func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean, err error) {
 	jmx := make(map[string]interface{})
 	json.Unmarshal(httpBodyBytes, &jmx)
@@ -31,40 +31,6 @@ func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean, err er
 		result[name] = &JmxBean{Domain: domain, Labels: labels, Content: bean}
 	}
 	return
-}
-
-func parseMetrics(name string, data interface{}, deep int, labels *map[string]string) {
-	deep = deep - 1
-	if deep <= 0 {
-		return
-	}
-	switch data.(type) {
-	case map[string]interface{}:
-		{
-			for k, v := range data.(map[string]interface{}) {
-				name = name + "_" + k
-				parseMetrics(name, v, deep, labels)
-			}
-		}
-	case []interface{}:
-		for _, v := range data.([]interface{}) {
-			parseMetrics(name, v, deep, labels)
-		}
-	default:
-		{
-			switch data.(type) {
-			case float64:
-
-			case int:
-				log.Printf("%s : %d", name, data)
-			case string:
-				log.Printf("string type: %s", data)
-			default:
-				log.Printf("unkown type %v", data)
-			}
-		}
-	}
-
 }
 
 func parseJmxBeanName(name string) (domain string, properties map[string]string) {
