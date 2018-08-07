@@ -11,8 +11,10 @@ There are some OOTB exporters, see: [Hadoop Exporter](/hadoop_exporter) , [Hbase
 
 ```bash
 make
-./jmx_json_exporter --from locaohost:9200 --port 9200 --path /metrics
+./jmx_json_exporter --from [host]:[port]
 ```
+
+Then visit http://localhost:9200 ,you can see the metrics.
 
 ## Params
 
