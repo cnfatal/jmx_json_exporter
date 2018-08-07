@@ -6,8 +6,8 @@ import (
 		"strings"
 )
 
-//JmxBeans 解析后的 jmx 数据，
-// 例子：{ "name" : "Hadoop:service=NameNode,name=JvmMetrics", ... }
+//JmxBeans  jmx ，
+// seems may like：{ "name" : "Hadoop:service=NameNode,name=JvmMetrics", ... }
 // Name:Hadoop Labels:{service=NameNode,name=JVMMetrics} Content:{name={...},keys={...}}
 type JmxBean struct {
 	Domain  string
@@ -15,13 +15,13 @@ type JmxBean struct {
 	Content map[string]interface{}
 }
 
-//JmxJsonBeansParse 从http响应中解析出beans结构
+//JmxJsonBeansParse can unmarshal []byte in json format
 func JmxJsonBeansParse(httpBodyBytes []byte) (result map[string]*JmxBean, err error) {
 	jmx := make(map[string]interface{})
 	json.Unmarshal(httpBodyBytes, &jmx)
 	beans, ok := jmx["beans"].([]interface{})
 	if !ok {
-		return nil, errors.New("响应中未找到\"beans\" 数据")
+		return nil, errors.New("can't find \"beans\" data")
 	}
 	result = make(map[string]*JmxBean, len(beans))
 	for i := 0; i < len(beans); i++ {

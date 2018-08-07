@@ -76,10 +76,10 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 	for namespace, properties := range config {
 		for domain, items := range properties {
 			for beanName, bean := range beans {
-				//todo:正则/通配匹配
+				//todo:regexp compile , domain regexp beanName
 				if string(domain) == beanName {
 					for _, item := range items {
-						//检测指标是否存在,不存在则不初始化
+						//infer if exist, if not then ignore
 						if !existProperty(item, bean) {
 							continue
 						}
@@ -155,7 +155,6 @@ func generateCustomSummaryContent(summaryName NameRegexp, bean *JmxBean) (sum fl
 
 func existProperty(property *Property, bean *JmxBean) (exist bool) {
 	s := string(property.NameRegexp)
-
 	switch property.DataType {
 	case TypeGauge:
 		_, exist = bean.Content[s]

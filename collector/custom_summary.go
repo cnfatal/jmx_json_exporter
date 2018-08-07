@@ -8,6 +8,7 @@ import (
 	"sort"
 )
 
+//CustomSummary is a implement of official promethues 'summary' type, and it can set summary from an Existing jmx data directly.
 type CustomSummary interface {
 	prometheus.Metric
 	prometheus.Collector
@@ -19,13 +20,13 @@ type customSummary struct {
 
 	mtx sync.Mutex // Protects every other moving part.
 
-	// 描述区域
+	// description
 	desc *prometheus.Desc
 
-	// 标签区域
+	// labels
 	labelPairs []*dto.LabelPair
 
-	// 数据区域
+	// data
 	objectives map[float64]float64
 	sum        float64
 	cnt        uint64
