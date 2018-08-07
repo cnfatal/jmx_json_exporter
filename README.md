@@ -7,14 +7,14 @@ It suitable for `hadoop`,`hbase`,`spark`... who using `Deopwizard Metrics` and e
 
 There are some OOTB exporters, see: [Hadoop Exporter](/hadoop_exporter) , [Hbase Exporter](/hbase_exporter), [Zookeeper Exporter](/zookeeper_exporter)
 
-## getting start
+## Getting start
 
 ```bash
-go build .
+make
 ./jmx_json_exporter --from locaohost:9200 --port 9200 --path /metrics
 ```
 
-## params
+## Params
 
 |option|default|description|
 |---|---|---|
@@ -24,7 +24,7 @@ go build .
 |--config|"{}"|json type  config string|
 |--config-file|./config.json|config file json|
 
-## config
+## Config
 
 a json format config in file or via commandline is needed:
 ```json
@@ -109,4 +109,9 @@ someService_OperatingSystem_OpenFileDescriptorCount{instance="SomeService"} 279
 
 > The "OperatingSystem" is detected from string"java.lang:type=OperatingSystem", 'name' or 'type' will be used.
 
-## docker
+## Docker
+
+```bash
+make
+docker run -it --rm -p 9200:9200 jmx-json-exporter --from [ip]:[port] --config {\"someService\":{\"java.lang:type=OperatingSystem\":[{\"name\":\"MaxFileDescriptorCount\",\"type\":\"Gauge\",\"help\":\"maxFD\"},{\"name\":\"OpenFileDescriptorCount\",\"type\":\"Gauge\",\"help\":\"help-msg\"}]}}
+```
