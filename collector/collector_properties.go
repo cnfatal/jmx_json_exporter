@@ -22,7 +22,7 @@ type Property struct {
 }
 type Properties map[NameSpace]map[DomainRegexp][]*Property
 
-func EncodePropertyKey(domain DomainRegexp, name NameRegexp) string {
+func EncodePropertyKey(domain string, name NameRegexp) string {
 	return string(domain) + spliteChar + string(name)
 }
 

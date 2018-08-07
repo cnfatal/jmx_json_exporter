@@ -37,7 +37,7 @@ func (bc *CommonCollector) Collect(ch chan<- Metric) {
 		case Gauge:
 			v.(Gauge).Set(beans[domain].Content[name].(float64))
 		case CustomSummary:
-			v.(CustomSummary).UpdateContent(generateCustomSummaryContent(NameRegexp(name), beans[name]))
+			v.(CustomSummary).UpdateContent(generateCustomSummaryContent(NameRegexp(name), beans[domain]))
 		default:
 			log.Printf("unsupport type %v", v)
 		}
@@ -62,9 +62,9 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 	result := make(map[string]interface{ Collector })
 	for namespace, properties := range config {
 		for domain, items := range properties {
-			for name, bean := range beans {
+			for beanName, bean := range beans {
 				//todo:正则/通配匹配
-				if string(domain) == name {
+				if string(domain) == beanName {
 					for _, item := range items {
 						//检测指标是否存在,不存在则不初始化
 						if !existProperty(item,bean) {
@@ -72,7 +72,7 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 						}
 						switch item.DataType {
 						case TypeGauge:
-							result[EncodePropertyKey(domain, item.NameRegexp)] = NewGauge(GaugeOpts{
+							result[EncodePropertyKey(beanName, item.NameRegexp)] = NewGauge(GaugeOpts{
 								Namespace:   string(namespace),
 								Subsystem:   inferSubSystemName(bean),
 								Name:        string(item.NameRegexp),
@@ -81,7 +81,7 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 							})
 						case TypeSummary:
 							_, _, content := generateCustomSummaryContent(item.NameRegexp, bean)
-							result[EncodePropertyKey(domain, item.NameRegexp)] = NewCustomSummary(SummaryOpts{
+							result[EncodePropertyKey(beanName, item.NameRegexp)] = NewCustomSummary(SummaryOpts{
 								Namespace:   string(namespace),
 								Subsystem:   inferSubSystemName(bean),
 								Name:        string(item.NameRegexp),
@@ -115,6 +115,7 @@ func inferSubSystemName(bean *JmxBean) string {
 }
 
 func generateCustomSummaryContent(summaryName NameRegexp, bean *JmxBean) (sum float64, count uint64, content map[float64]float64) {
+	content = make(map[float64]float64)
 	for name, value := range bean.Content {
 		if strings.Contains(name, string(summaryName)) {
 			switch strings.Split(name, "_")[1] {
