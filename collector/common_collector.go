@@ -14,6 +14,7 @@ const jmxEndpoint = "/jmx"
 type CommonCollector struct {
 	hostname   string
 	config     Properties
+	up Gauge
 	collectors map[string]interface{ Collector }
 }
 
@@ -28,8 +29,14 @@ func (bc *CommonCollector) Collect(ch chan<- Metric) {
 	log.Printf("Collect: %s", bc.hostname)
 	beans, err := JmxJsonBeansParse(utils.Get("http://" + bc.hostname + jmxEndpoint))
 	if err != nil {
+		// 网络问题或服务器宕机引发获取不到监控数据判定为 down
+		bc.up.Set(0)
+		bc.up.Collect(ch)
 		log.Printf("Collect 未收集到数据")
 		return
+	} else {
+		bc.up.(Gauge).Set(1)
+		bc.up.Collect(ch)
 	}
 	for k, v := range bc.collectors {
 		domain, name := DecodePropertyKey(k)
@@ -55,7 +62,13 @@ func NewCommonCollector(hostPort string, config Properties, labels map[string]st
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	return &CommonCollector{ hostPort,  config,generateCollector(config, beans, labels)}
+	// 增加 up 在线状态检测
+	up := NewGauge(GaugeOpts{
+		Name:        "up",
+		Help:        "在线状态检测",
+		ConstLabels: labels,
+	})
+	return &CommonCollector{hostPort, config, up,generateCollector(config, beans, labels)}
 }
 
 func generateCollector(config Properties, beans map[string]*JmxBean, labels Labels) map[string]interface{ Collector } {
@@ -67,7 +80,7 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 				if string(domain) == beanName {
 					for _, item := range items {
 						//检测指标是否存在,不存在则不初始化
-						if !existProperty(item,bean) {
+						if !existProperty(item, bean) {
 							continue
 						}
 						switch item.DataType {
@@ -145,10 +158,10 @@ func existProperty(property *Property, bean *JmxBean) (exist bool) {
 
 	switch property.DataType {
 	case TypeGauge:
-		_,exist = bean.Content[s]
+		_, exist = bean.Content[s]
 	case TypeSummary:
 		for k := range bean.Content {
-			if strings.Contains(k,s){
+			if strings.Contains(k, s) {
 				return true
 			}
 		}
