@@ -1,9 +1,4 @@
-package jvm_collector
-
-import (
-	. "github.com/prometheus/client_golang/prometheus"
-	. "github.com/fatalc/jmx_json_exporter/collector"
-)
+package collector
 
 var jvmConfig = Properties{
 	"JVM": {
@@ -15,14 +10,10 @@ var jvmConfig = Properties{
 		}},
 }
 
-type JvmCollector interface {
-	Collector
-}
-
-func NewJvmCollector(hostPort string) JvmCollector {
+func NewJvmCollector(hostPort string) *CommonCollector {
 	return NewCommonCollector(hostPort, jvmConfig, nil)
 }
 
-func NewWithJvmCollector(hostPort string, config Properties, labels map[string]string) JvmCollector {
+func NewCommonCollectorWithJvm(hostPort string, config Properties, labels map[string]string) *CommonCollector {
 	return NewCommonCollector(hostPort, jvmConfig.Append(config), labels)
 }

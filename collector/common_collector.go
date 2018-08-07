@@ -66,6 +66,10 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 				//todo:正则/通配匹配
 				if string(domain) == name {
 					for _, item := range items {
+						//检测指标是否存在,不存在则不初始化
+						if !existProperty(item,bean) {
+							continue
+						}
 						switch item.DataType {
 						case TypeGauge:
 							result[EncodePropertyKey(domain, item.NameRegexp)] = NewGauge(GaugeOpts{
@@ -133,4 +137,22 @@ func generateCustomSummaryContent(summaryName NameRegexp, bean *JmxBean) (sum fl
 		}
 	}
 	return
+}
+
+func existProperty(property *Property, bean *JmxBean) (exist bool) {
+	s := string(property.NameRegexp)
+
+	switch property.DataType {
+	case TypeGauge:
+		_,exist = bean.Content[s]
+	case TypeSummary:
+		for k := range bean.Content {
+			if strings.Contains(k,s){
+				return true
+			}
+		}
+	default:
+		return false
+	}
+	return exist
 }
