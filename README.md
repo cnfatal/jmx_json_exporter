@@ -5,7 +5,7 @@ Export [Dropwizard Metrics](https://github.com/dropwizard/metrics)
 
 It suitable for `hadoop`,`hbase`,`spark`... who using `Deopwizard Metrics` and exporter to http interface.
 
-There are some OOTB exporters, see: [Hadoop Exporter](/hadoop_exporter) , [Hbase Exporter](/hbase_exporter), [Zookeeper Exporter](/zookeeper_exporter)
+There are also some OOTB exporters, see: [Hadoop Exporter](/hadoop_exporter) , [Hbase Exporter](/hbase_exporter), [Zookeeper Exporter](/zookeeper_exporter)
 
 ## Getting start
 
@@ -73,7 +73,34 @@ There is a jmx json metrics export from `http://SomeService:[port]/jmx`
             "Version": "3.10.0-514.el7.x86_64",
             "Name": "Linux",
             "ObjectName": "java.lang:type=OperatingSystem"
-        }
+        },
+        {
+            "name" : "Hadoop:service=HBase,name=Master,sub=Balancer",
+            "description" : "Metrics about HBase master balancer",
+            "modelerType" : "Master,sub=Balancer",
+            "tag.Context" : {
+              "description" : "Metrics context",
+              "value" : "master"
+            },
+            "tag.Hostname" : {
+              "description" : "Local hostname",
+              "value" : "node170"
+            },
+            "miscInvocationCount" : 5,
+            "BalancerCluster_num_ops" : 1,
+            "BalancerCluster_min" : 0,
+            "BalancerCluster_max" : 0,
+            "BalancerCluster_mean" : 0,
+            "BalancerCluster_25th_percentile" : 0,
+            "BalancerCluster_median" : 0,
+            "BalancerCluster_75th_percentile" : 0,
+            "BalancerCluster_90th_percentile" : 0,
+            "BalancerCluster_95th_percentile" : 0,
+            "BalancerCluster_98th_percentile" : 0,
+            "BalancerCluster_99th_percentile" : 0,
+            "BalancerCluster_99.9th_percentile" : 0,
+            "BalancerCluster_TimeRangeCount_600000-inf" : 1
+          }
     ]
 }
 ```
@@ -87,9 +114,16 @@ The correspond config will like:
       {"name":"MaxFileDescriptorCount","type":"Gauge","help":"maxFD"},
       {"name":"OpenFileDescriptorCount","type":"Gauge","help":"help-msg"}
     ]
+  },
+  "hbase":{
+    "Hadoop:service=HBase,name=Master,sub=Balancer":[
+      {"name":"BalancerCluster","type":"CustomSummary","help":"BalanceclusterSummary"}
+    ]
   }
 }
 ```
+
+> For Summary metrics only use thr prefix,"BalancerCluster_mean" using "BalancerCluster".
 
 or via commandline
 
@@ -106,10 +140,16 @@ someService_OperatingSystem_MaxFileDescriptorCount{instance="SomeService"} 4096
 # HELP someService_OperatingSystem_OpenFileDescriptorCount help-msg
 # TYPE someService_OperatingSystem_OpenFileDescriptorCount gauge
 someService_OperatingSystem_OpenFileDescriptorCount{instance="SomeService"} 279
-
+# HELP hbase_Master_BalancerCluster BalanceclusterSummary
+# TYPE hbase_Master_BalancerCluster summary
+hbase_Master_BalancerCluster{instance="192.168.34.170",quantile="0.25"} 0
+hbase_Master_BalancerCluster{instance="192.168.34.170",quantile="0.5"} 0
+hbase_Master_BalancerCluster{instance="192.168.34.170",quantile="0.99"} 0
+hbase_Master_BalancerCluster_sum{instance="192.168.34.170"} 0
+hbase_Master_BalancerCluster_count{instance="192.168.34.170"} 0
 ```
 
-> The "OperatingSystem" is detected from string"java.lang:type=OperatingSystem", 'name' or 'type' will be used.
+> The "OperatingSystem" is auto detected from string"java.lang:type=OperatingSystem", 'name' or 'type' will be used.
 
 ## Docker
 

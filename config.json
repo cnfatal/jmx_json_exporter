@@ -4,5 +4,10 @@
       {"name":"MaxFileDescriptorCount","type":"Gauge","help":"maxFD"},
       {"name":"OpenFileDescriptorCount","type":"Gauge","help":"help-msg"}
     ]
+  },
+  "hbase":{
+    "Hadoop:service=HBase,name=Master,sub=Balancer":[
+      {"name":"BalancerCluster","type":"CustomSummary","help":"BalanceclusterSummary"}
+    ]
   }
 }
