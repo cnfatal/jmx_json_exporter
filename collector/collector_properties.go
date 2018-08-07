@@ -16,9 +16,9 @@ type DomainRegexp string
 type NameRegexp string
 type NameSpace string
 type Property struct {
-	NameRegexp NameRegexp
-	DataType   DataType
-	Help       string
+	NameRegexp NameRegexp  `json:"name"`
+	DataType   DataType	`json:"type"`
+	Help       string	`json:"help"`
 }
 type Properties map[NameSpace]map[DomainRegexp][]*Property
 

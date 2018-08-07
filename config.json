@@ -1,0 +1,8 @@
+{
+  "someService":{
+    "java.lang:type=OperatingSystem":[
+      {"name":"MaxFileDescriptorCount","type":"Gauge","help":"maxFD"},
+      {"name":"OpenFileDescriptorCount","type":"Gauge","help":"help-msg"}
+    ]
+  }
+}
