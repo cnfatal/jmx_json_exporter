@@ -8,7 +8,7 @@ PREFIX                  ?= $(shell pwd)
 BIN_DIR                 ?= $(shell pwd)
 DOCKER_IMAGE_NAME       ?= jmx-json-exporter
 #DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
-DOCKER_IMAGE_TAG        latest
+DOCKER_IMAGE_TAG        ?=latest
 
 all: format test build docker
 

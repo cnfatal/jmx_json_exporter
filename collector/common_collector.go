@@ -14,25 +14,23 @@ const jmxEndpoint = "/jmx"
 type CommonCollector struct {
 	hostname   string
 	config     Properties
-	up Gauge
+	up         Gauge
 	collectors map[string]interface{ Collector }
 }
 
 func (bc *CommonCollector) Describe(ch chan<- *Desc) {
-	log.Printf("Describe: %s", bc.hostname)
 	for _, v := range bc.collectors {
 		v.Describe(ch)
 	}
 }
 
 func (bc *CommonCollector) Collect(ch chan<- Metric) {
-	log.Printf("Collect: %s", bc.hostname)
 	beans, err := JmxJsonBeansParse(utils.Get("http://" + bc.hostname + jmxEndpoint))
 	if err != nil {
 		// 网络问题或服务器宕机引发获取不到监控数据判定为 down
 		bc.up.Set(0)
 		bc.up.Collect(ch)
-		log.Printf("Collect 未收集到数据")
+		log.Printf("can't collect metrics maybe server is down")
 		return
 	} else {
 		bc.up.(Gauge).Set(1)
@@ -53,6 +51,7 @@ func (bc *CommonCollector) Collect(ch chan<- Metric) {
 }
 
 func NewCommonCollector(hostPort string, config Properties, labels map[string]string) *CommonCollector {
+	log.Printf("initial Common Collector To -> %s", hostPort)
 	if labels == nil {
 		labels = map[string]string{model.InstanceLabel: strings.Split(hostPort, ":")[0]}
 	} else {
@@ -68,7 +67,7 @@ func NewCommonCollector(hostPort string, config Properties, labels map[string]st
 		Help:        "在线状态检测",
 		ConstLabels: labels,
 	})
-	return &CommonCollector{hostPort, config, up,generateCollector(config, beans, labels)}
+	return &CommonCollector{hostPort, config, up, generateCollector(config, beans, labels)}
 }
 
 func generateCollector(config Properties, beans map[string]*JmxBean, labels Labels) map[string]interface{ Collector } {
@@ -81,6 +80,7 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 					for _, item := range items {
 						//infer if exist, if not then ignore
 						if !existProperty(item, bean) {
+							log.Printf("namespace:%s , %s can't found", namespace, item.NameRegexp)
 							continue
 						}
 						switch item.DataType {
@@ -103,7 +103,7 @@ func generateCollector(config Properties, beans map[string]*JmxBean, labels Labe
 								Objectives:  content,
 							})
 						default:
-							log.Printf("unsupport type %s", item.DataType)
+							log.Printf("namespace:%s , unsupport type %s of %s", namespace, item.DataType, item.NameRegexp)
 						}
 					}
 				}
