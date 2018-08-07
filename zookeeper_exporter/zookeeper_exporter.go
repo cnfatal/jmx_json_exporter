@@ -23,6 +23,7 @@ var (
 const (
 	nameSpace = "zookeeper"
 	endpoint  = "/commands"
+	upStatus  = "up"
 	splitChar = "^"
 )
 
@@ -82,6 +83,14 @@ func (zc *zooKeeperCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (zc *zooKeeperCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, host := range zc.hosts {
+		if isActive(host) {
+			zc.collectors[host][upStatus].Set(1)
+			zc.collectors[host][upStatus].Collect(ch)
+		} else {
+			zc.collectors[host][upStatus].Set(0)
+			zc.collectors[host][upStatus].Collect(ch)
+			continue
+		}
 		for command, quotas := range zc.config {
 			returns := getCommandData(command, host)
 			for _, quota := range quotas {
@@ -120,6 +129,14 @@ func NewZookeeperCollector(hosts []string) *zooKeeperCollector {
 		// 添加 instance label
 		labels := prometheus.Labels{model.InstanceLabel: host}
 		collectors[host] = make(map[string]prometheus.Gauge)
+
+		// 添加 up 状态监测
+		collectors[host][upStatus] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name:        upStatus,
+			Help:        "服务器在线",
+			ConstLabels: labels,
+		})
+
 		for command, quotas := range zookeeperConfig {
 			for _, quota := range quotas {
 				collectors[host][command+splitChar+quota.name] = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -144,6 +161,14 @@ func getCommandData(command string, host string) map[string]interface{} {
 	result := make(map[string]interface{})
 	json.Unmarshal(utils.Get("http://"+host+endpoint+"/"+command), &result)
 	return result
+}
+
+func isActive(hostPort string) bool {
+	_, err := http.Get("http://" + hostPort + endpoint)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func init() {
