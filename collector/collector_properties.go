@@ -14,12 +14,13 @@ const (
 
 type DomainRegexp string
 type NameRegexp string
-type Properties map[DomainRegexp][]*PropertiesItem
-type PropertiesItem struct {
+type NameSpace string
+type Property struct {
 	NameRegexp NameRegexp
 	DataType   DataType
 	Help       string
 }
+type Properties map[NameSpace]map[DomainRegexp][]*Property
 
 func EncodePropertyKey(domain DomainRegexp, name NameRegexp) string {
 	return string(domain) + spliteChar + string(name)
@@ -28,4 +29,11 @@ func EncodePropertyKey(domain DomainRegexp, name NameRegexp) string {
 func DecodePropertyKey(key string) (domain string, name string) {
 	vars := strings.Split(string(key), spliteChar)
 	return vars[0], vars[1]
+}
+
+func (p Properties) Append(add Properties) Properties {
+	for nameSpace, value := range add {
+		p[nameSpace] = value
+	}
+	return p
 }

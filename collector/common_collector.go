@@ -45,56 +45,59 @@ func (bc *CommonCollector) Collect(ch chan<- Metric) {
 	}
 }
 
-func NewCommonCollector(hostPort string, namespace string, config Properties, labels map[string]string) *CommonCollector {
+func NewCommonCollector(hostPort string, config Properties, labels map[string]string) *CommonCollector {
 	if labels == nil {
 		labels = map[string]string{model.InstanceLabel: strings.Split(hostPort, ":")[0]}
 	} else {
 		labels[model.InstanceLabel] = strings.Split(hostPort, ":")[0]
 	}
-	commonCollector := &CommonCollector{
-		hostname:   hostPort,
-		config:     config,
-		collectors: make(map[string]interface{ Collector }),
-	}
 	beans, err := JmxJsonBeansParse(utils.Get(httpProtocol + hostPort + jmxEndpoint))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	for domain, items := range config {
-		for name, bean := range beans {
-			//todo:
-			if string(domain) == name {
-				for _, item := range items {
-					switch item.DataType {
-					case TypeGauge:
-						commonCollector.collectors[EncodePropertyKey(domain, item.NameRegexp)] = NewGauge(GaugeOpts{
-							Namespace:   namespace,
-							Subsystem:   getSubSystem(bean),
-							Name:        string(item.NameRegexp),
-							Help:        item.Help,
-							ConstLabels: labels,
-						})
-					case TypeSummary:
-						_, _, content := generateCustomSummaryContent(item.NameRegexp, bean)
-						commonCollector.collectors[EncodePropertyKey(domain, item.NameRegexp)] = NewCustomSummary(SummaryOpts{
-							Namespace:   namespace,
-							Subsystem:   getSubSystem(bean),
-							Name:        string(item.NameRegexp),
-							Help:        item.Help,
-							ConstLabels: labels,
-							Objectives:  content,
-						})
-					default:
-						log.Printf("unsupport type %s", item.DataType)
+	return &CommonCollector{ hostPort,  config,generateCollector(config, beans, labels)}
+}
+
+func generateCollector(config Properties, beans map[string]*JmxBean, labels Labels) map[string]interface{ Collector } {
+	result := make(map[string]interface{ Collector })
+	for namespace, properties := range config {
+		for domain, items := range properties {
+			for name, bean := range beans {
+				//todo:正则/通配匹配
+				if string(domain) == name {
+					for _, item := range items {
+						switch item.DataType {
+						case TypeGauge:
+							result[EncodePropertyKey(domain, item.NameRegexp)] = NewGauge(GaugeOpts{
+								Namespace:   string(namespace),
+								Subsystem:   inferSubSystemName(bean),
+								Name:        string(item.NameRegexp),
+								Help:        item.Help,
+								ConstLabels: labels,
+							})
+						case TypeSummary:
+							_, _, content := generateCustomSummaryContent(item.NameRegexp, bean)
+							result[EncodePropertyKey(domain, item.NameRegexp)] = NewCustomSummary(SummaryOpts{
+								Namespace:   string(namespace),
+								Subsystem:   inferSubSystemName(bean),
+								Name:        string(item.NameRegexp),
+								Help:        item.Help,
+								ConstLabels: labels,
+								Objectives:  content,
+							})
+						default:
+							log.Printf("unsupport type %s", item.DataType)
+						}
 					}
 				}
 			}
 		}
+
 	}
-	return commonCollector
+	return result
 }
 
-func getSubSystem(bean *JmxBean) string {
+func inferSubSystemName(bean *JmxBean) string {
 	labels := bean.Labels
 	value, ok := labels["name"]
 	if ok {
