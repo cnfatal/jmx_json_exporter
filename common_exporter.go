@@ -1,17 +1,17 @@
 package main
 
 import (
-	"net/http"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/fatalc/jmx_json_exporter/collector"
-	"flag"
-	"log"
 	"encoding/json"
+	"flag"
+	"github.com/fatalc/jmx_json_exporter/collector"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
+	"log"
+	"net/http"
 )
 
-const emptyJson  = "{}"
+const emptyJson = "{}"
 
 var (
 	from       = flag.String("from", "localhost:8080", "The \"/jmx\"endpoint's host:port ")
