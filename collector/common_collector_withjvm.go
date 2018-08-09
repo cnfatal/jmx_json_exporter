@@ -3,8 +3,8 @@ package collector
 var jvmConfig = Properties{
 	"JVM": {
 		"java.lang:type=OperatingSystem": {
-			&Property{"MaxFileDescriptorCount", TypeCounter, "最大文件描述合计"},
-			&Property{"OpenFileDescriptorCount", TypeCounter, "打开文件描述合计"},
+			&Property{"MaxFileDescriptorCount", TypeGauge, "最大文件描述合计"},
+			&Property{"OpenFileDescriptorCount", TypeGauge, "打开文件描述合计"},
 			&Property{"SystemCpuLoad", TypeGauge, "系统负载"},
 			&Property{"ProcessCpuLoad", TypeGauge, "CPU负载"},
 		}},

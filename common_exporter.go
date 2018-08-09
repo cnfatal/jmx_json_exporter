@@ -26,7 +26,7 @@ func main() {
 	commonCollectorWithJvm := collector.NewCommonCollectorWithJvm(*from, analyseConfig(*config, *configFile), nil)
 	prometheus.MustRegister(commonCollectorWithJvm)
 	http.Handle(*path, promhttp.Handler())
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte(`
 			<html>
 				<head><title>Jmx Json Exporter</title></head>
