@@ -127,7 +127,7 @@ func NewZookeeperCollector(hosts []string) *zooKeeperCollector {
 	collectors := make(map[string]map[string]prometheus.Gauge)
 	for _, host := range hosts {
 		// 添加 instance label
-		labels := prometheus.Labels{model.InstanceLabel: host}
+		labels := prometheus.Labels{model.InstanceLabel: strings.Split(host,":")[0]}
 		collectors[host] = make(map[string]prometheus.Gauge)
 
 		// 添加 up 状态监测
