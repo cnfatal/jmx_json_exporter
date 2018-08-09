@@ -59,7 +59,7 @@ func NewCommonCollector(hostPort string, config Properties, labels map[string]st
 	}
 	beans, err := JmxJsonBeansParse(utils.Get(httpProtocol + hostPort + jmxEndpoint))
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Printf("未收集到节点数据,%s",err.Error())
 	}
 	// 增加 up 在线状态检测
 	up := NewGauge(GaugeOpts{
