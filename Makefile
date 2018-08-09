@@ -26,6 +26,6 @@ test:
 
 docker:
 	@echo ">>building docker image"
-	@docker -H 192.168.34.177:2375 build -t  "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" .
+	@docker build -t  "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" .
 
 .PHONY: all
