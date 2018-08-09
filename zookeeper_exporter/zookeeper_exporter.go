@@ -195,6 +195,6 @@ func main() {
 			</html>`))
 	})
 	listenAddress := ":" + *port
-	log.Printf("server listing at %v", ":8080")
+	log.Printf("server listing at %s", *port)
 	log.Fatal(http.ListenAndServe(listenAddress, nil))
 }
