@@ -1,5 +1,9 @@
 # Jmx Json Exporter
 
+**Deprecated**
+
+I'm not maintain it,beacuse it is so so so bad, you can use it just for fun 😬
+
 Export [Dropwizard Metrics](https://github.com/dropwizard/metrics)
 （also called `Yammer Metrics`）from `/jmx` endpoint to [Prometheus Metrics](https://github.com/prometheus).
 
